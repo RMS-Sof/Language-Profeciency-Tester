@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Programming Languages Proficiency Tester</title>
+<style>
+  :root{--bg:#f6f9fc;--card:#ffffff;--muted:#5b6b78;--accent:#0b63d6}
+  body{font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#0b1320;margin:0;padding:20px}
+  .container{max-width:900px;margin:20px auto}
+  h1{margin:0 0 8px;font-size:20px}
+  .lang-row{display:flex;gap:8px;margin:12px 0}
+  .lang-btn{padding:8px 12px;border-radius:8px;border:1px solid #d6e0eb;background:#fff;cursor:pointer}
+  .lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(12,20,30,0.06)}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+  button{padding:8px 12px;border-radius:8px;border:1px solid #c7d6ee;background:#f8fbff;cursor:pointer}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .question-area{margin-top:16px;min-height:140px}
+  .qtext{font-weight:600;margin-bottom:10px}
+  .options{display:flex;flex-direction:column;gap:8px}
+  label.opt{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:8px;border:1px solid #e6eefc;background:#fbfdff;cursor:pointer}
+  input[type=radio]{margin-top:3px}
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+  .muted{color:var(--muted);font-size:13px}
+  .result{margin-top:12px}
+  .leaderboard{margin-top:14px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid #eef3f8;text-align:left}
+  .small{font-size:13px}
+  .answer-key{margin-top:8px;font-family:ui-monospace,monospace;background:#f2f6fb;padding:8px;border-radius:6px}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Programming Languages Proficiency Tester </h1>
+    <h2>Designed by Prof. Rahul M. Samant, HOD-IT, NBNSTIC</h2>
+    <div class="muted small">Select a language, press <strong>Start Quiz</strong>, answer questions one at a time. Two questions per language (simple → advanced). Grades and leaderboard stored locally.</div>
+
+    <div class="card" style="margin-top:12px">
+      <div>
+        <div class="lang-row" id="langRow">
+          <!-- language buttons inserted here -->
+        </div>
+        <div class="controls">
+          <button id="startBtn" class="primary">Start Quiz</button>
+          <div class="muted small">&nbsp;&nbsp;Selected: <span id="selectedLang">None</span></div>
+        </div>
+      </div>
+
+      <div class="question-area" id="questionArea" style="display:none">
+        <div class="qmeta muted small">Question <span id="qIndex">0</span> of <span id="qTotal">0</span></div>
+        <div class="qtext" id="qText"></div>
+        <div class="options" id="options"></div>
+
+        <div class="nav">
+          <div>
+            <button id="prevBtn">Previous</button>
+            <button id="nextBtn">Next</button>
+          </div>
+          <div>
+            <button id="submitBtn" class="primary">Submit Test</button>
+          </div>
+        </div>
+
+        <div class="result" id="resultBlock" style="display:none"></div>
+        <div class="answer-key" id="answerKey" style="display:none"></div>
+      </div>
+
+    </div>
+
+    <div class="card leaderboard">
+      <h3 style="margin-top:0">Leaderboard</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="playerName" placeholder="Enter name to save score" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d7e6fa" />
+        <button id="saveScoreBtn">Save Score</button>
+        <button id="clearLb">Clear</button>
+      </div>
+      <div style="margin-top:12px">
+        <table><thead><tr><th>Name</th><th>Lang</th><th>Score</th><th>When</th></tr></thead><tbody id="lbBody"></tbody></table>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+// --- Question bank: 2 questions per language (simple -> advanced)
+const BANK = {
+  "C": [
+    { q: "Which header declares printf()?", options: ["<stdlib.h>", "<stdio.h>", "<string.h>", "<ctype.h>"], correct: 1 },
+    { q: "What is undefined behavior in C?", options: ["Well-specified runtime behaviour","A compiler error","Behavior not defined by the standard","An optimization hint"], correct: 2 },
+    {q: "Which statement is used to skip iteration?", options: ["exit", "break", "continue", "pass"], answer: 2},
+{q: "Which file extension is used for C source files?", options: [".cpp", ".java", ".c", ".cs"], answer: 2},
+{q: "Which function is the entry point of every C program?", options: ["start()", "main()", "program()", "init()"], answer: 1},
+{q: "Which header file is required for printf()?", options: ["stdlib.h", "stdio.h", "conio.h", "string.h"], answer: 1},
+{q: "Which symbol is used to end a statement in C?", options: [":", ".", ";", ","], answer: 2},
+{q: "Which of the following is NOT a valid C data type?", options: ["int", "float", "boolean", "char"], answer: 2},
+{q: "What is sizeof(char) in C?", options: ["1 byte", "2 bytes", "4 bytes", "system dependent"], answer: 0},
+{q: "Which format specifier is used for int in printf()?", options: ["%d", "%i", "%f", "%c"], answer: 0},
+{q: "Which keyword is used to define constants in C?", options: ["static", "define", "const", "constant"], answer: 2},
+{q: "Which operator is used for modulo division in C?", options: ["%", "/", "//", "mod"], answer: 0},
+{q: "Which of the following is a logical operator?", options: ["&", "&&", "|", "="], answer: 1},
+{q: "Which loop is guaranteed to execute at least once?", options: ["for", "while", "do-while", "nested for"], answer: 2},
+{q: "Which keyword is used to exit a loop?", options: ["exit", "break", "stop", "quit"], answer: 1},
+{q: "Which keyword is used to skip current iteration?", options: ["exit", "break", "continue", "return"], answer: 2},
+{q: "Which of these is not a storage class in C?", options: ["auto", "static", "register", "dynamic"], answer: 3},
+{q: "Which operator is used for pointer dereferencing?", options: ["&", "*", "->", "."], answer: 1},
+{q: "Which operator is used to access structure members?", options: [".", "->", "::", ":"], answer: 0},
+{q: "Which operator is used to access structure members via pointer?", options: [".", "->", "&", "*"], answer: 1},
+{q: "Which keyword is used to define a structure?", options: ["struct", "structure", "class", "record"], answer: 0},
+{q: "Which keyword is used to allocate memory dynamically?", options: ["new", "malloc", "alloc", "calloc"], answer: 1},
+{q: "Which function frees dynamically allocated memory?", options: ["delete()", "free()", "remove()", "release()"], answer: 1},
+{q: "Which of these is NOT a valid loop in C?", options: ["for", "while", "repeat-until", "do-while"], answer: 2},
+{q: "Which of these is NOT a valid relational operator?", options: ["==", "!=", "<>", "<="], answer: 2},
+{q: "Which operator is used to assign values?", options: ["=", "==", ":=", "=>"], answer: 0},
+{q: "Which keyword is used to return a value from a function?", options: ["return", "break", "exit", "yield"], answer: 0},
+{q: "Which function is used to read a single character?", options: ["scanf()", "getch()", "getchar()", "cin"], answer: 2},
+{q: "Which function is used to output formatted data?", options: ["printf()", "print()", "write()", "puts()"], answer: 0},
+{q: "Which operator is used to increment a variable?", options: ["++", "--", "+", "add"], answer: 0},
+{q: "Which keyword is used to define macros?", options: ["macro", "define", "const", "static"], answer: 1},
+{q: "Which symbol is used for preprocessor directives?", options: ["#", "$", "@", "&"], answer: 0},
+{q: "Which operator is used for bitwise AND?", options: ["&", "&&", "|", "^"], answer: 0},
+{q: "Which operator is used for bitwise OR?", options: ["|", "||", "&", "^"], answer: 0},
+{q: "Which operator is used for bitwise XOR?", options: ["^", "&", "|", "~"], answer: 0},
+{q: "Which operator is used for bitwise NOT?", options: ["!", "~", "&", "%"], answer: 1},
+{q: "Which operator is used for left shift?", options: ["<<", ">>", "<", ">"], answer: 0},
+{q: "Which operator is used for right shift?", options: ["<<", ">>", "<", ">"], answer: 1},
+{q: "Which function compares two strings?", options: ["strcmp()", "strcomp()", "compare()", "stringcmp()"], answer: 0},
+{q: "Which function copies a string?", options: ["strcpy()", "stringcopy()", "copy()", "memcpy()"], answer: 0},
+{q: "Which function returns the length of a string?", options: ["strlen()", "strlength()", "len()", "sizeof()"], answer: 0},
+{q: "Which header file is required for string functions?", options: ["stdlib.h", "string.h", "stdio.h", "ctype.h"], answer: 1},
+{q: "Which function is used to concatenate strings?", options: ["strcat()", "append()", "concat()", "join()"], answer: 0},
+{q: "Which keyword is used to define an array?", options: ["array", "list", "[]", "No keyword"], answer: 3},
+{q: "Which keyword is used to define a union?", options: ["struct", "union", "combine", "group"], answer: 1},
+{q: "Which is the size of an int on a 32-bit system?", options: ["1 byte", "2 bytes", "4 bytes", "8 bytes"], answer: 2},
+{q: "Which format specifier is used for float in printf()?", options: ["%d", "%f", "%c", "%lf"], answer: 1},
+{q: "Which format specifier is used for char in printf()?", options: ["%s", "%c", "%d", "%p"], answer: 1},
+{q: "Which format specifier is used for string in printf()?", options: ["%str", "%s", "%string", "%c"], answer: 1},
+{q: "Which header is required for malloc()?", options: ["stdio.h", "stdlib.h", "string.h", "memory.h"], answer: 1},
+{q: "Which function allocates zero-initialized memory?", options: ["malloc()", "calloc()", "realloc()", "zalloc()"], answer: 1},
+{q: "Which function reallocates memory?", options: ["malloc()", "calloc()", "realloc()", "resize()"], answer: 2},
+{q: "Which loop is used when the number of iterations is known?", options: ["for", "while", "do-while", "nested"], answer: 0},
+{q: "Which function is used to terminate a C program?", options: ["exit()", "stop()", "terminate()", "quit()"], answer: 0},
+{q: "Which of the following is a conditional operator?", options: ["?", ":", "?:", "??"], answer: 2},
+{q: "Which statement is used for multi-way branching?", options: ["switch", "goto", "if-else", "loop"], answer: 0},
+{q: "Which keyword is used with switch?", options: ["case", "option", "choice", "branch"], answer: 0},
+{q: "Which keyword is used to exit a switch?", options: ["exit", "break", "continue", "stop"], answer: 1},
+{q: "Which function is used to generate random numbers?", options: ["rand()", "random()", "srand()", "genrand()"], answer: 0},
+{q: "Which function initializes random seed?", options: ["rand()", "randomize()", "srand()", "init()"], answer: 2},
+{q: "Which header file is required for rand()?", options: ["math.h", "stdlib.h", "time.h", "stdio.h"], answer: 1},
+{q: "Which keyword is used to define a pointer?", options: ["ptr", "pointer", "*", "&"], answer: 2},
+{q: "Which operator returns address of a variable?", options: ["*", "&", "->", "."], answer: 1},
+{q: "Which keyword defines an enumerated type?", options: ["enum", "enumeration", "typedef", "class"], answer: 0},
+{q: "Which function is used to open a file?", options: ["open()", "fopen()", "fileopen()", "read()"], answer: 1},
+{q: "Which function closes a file?", options: ["fclose()", "close()", "stop()", "end()"], answer: 0},
+{q: "Which function writes a character to file?", options: ["fputc()", "putchar()", "write()", "fputs()"], answer: 0},
+{q: "Which function reads a character from file?", options: ["fgetc()", "getchar()", "read()", "getc()"], answer: 0},
+{q: "Which function writes a string to file?", options: ["fputs()", "puts()", "write()", "fprintf()"], answer: 0},
+{q: "Which function reads a string from file?", options: ["fgets()", "scanf()", "read()", "get()"], answer: 0},
+{q: "Which function positions file pointer?", options: ["fseek()", "rewind()", "ftell()", "move()"], answer: 0},
+{q: "Which function returns current file position?", options: ["fseek()", "ftell()", "rewind()", "tell()"], answer: 1},
+{q: "Which function resets file pointer to start?", options: ["rewind()", "fseek()", "ftell()", "reset()"], answer: 0},
+{q: "Which operator has the highest precedence?", options: ["++", "*", "()", "&&"], answer: 2},
+{q: "Which keyword is used for inline functions?", options: ["inline", "static", "register", "define"], answer: 0},
+{q: "Which operator is used for conditional expression?", options: ["if", "?:", "??", "switch"], answer: 1},
+{q: "Which is the default storage class of variables?", options: ["static", "register", "auto", "extern"], answer: 2},
+{q: "Which keyword is used for external linkage?", options: ["extern", "static", "auto", "global"], answer: 0},
+{q: "Which function allocates memory and initializes it to zero?", options: ["malloc()", "calloc()", "realloc()", "zalloc()"], answer: 1},
+{q: "Which function moves memory blocks?", options: ["memmove()", "memcpy()", "strcpy()", "copy()"], answer: 0},
+{q: "Which function compares memory blocks?", options: ["memcmp()", "memcompare()", "strcmp()", "compare()"], answer: 0},
+{q: "Which function sets memory with a value?", options: ["memset()", "setmem()", "fill()", "init()"], answer: 0},
+{q: "Which function copies memory?", options: ["memcpy()", "memmove()", "copy()", "strcpy()"], answer: 0},
+{q: "Which function converts string to integer?", options: ["atoi()", "stoi()", "toInt()", "strtoint()"], answer: 0},
+{q: "Which function converts string to float?", options: ["atof()", "stof()", "toFloat()", "strfloat()"], answer: 0},
+{q: "Which function converts string to long?", options: ["atol()", "stol()", "toLong()", "strlong()"], answer: 0},
+{q: "Which keyword is used to define typedefs?", options: ["typedef", "alias", "define", "using"], answer: 0},
+{q: "Which function executes a system command?", options: ["exec()", "system()", "run()", "execute()"], answer: 1},
+{q: "Which header file is required for exit()?", options: ["stdlib.h", "stdio.h", "process.h", "exit.h"], answer: 0},
+{q: "Which function aborts a program abnormally?", options: ["exit()", "terminate()", "abort()", "stop()"], answer: 2},
+{q: "Which function sorts an array?", options: ["qsort()", "sort()", "arrange()", "bubblesort()"], answer: 0},
+{q: "Which function searches in an array?", options: ["bsearch()", "search()", "find()", "lookup()"], answer: 0},
+{q: "Which function calculates power in C?", options: ["pow()", "power()", "exp()", "exponent()"], answer: 0},
+{q: "Which function calculates square root in C?", options: ["sqrt()", "square()", "root()", "pow()"], answer: 0},
+{q: "Which function returns absolute value?", options: ["abs()", "fabs()", "labs()", "all"], answer: 3},
+{q: "Which function calculates logarithm?", options: ["log()", "ln()", "log10()", "exp()"], answer: 0},
+{q: "Which function calculates exponential?", options: ["pow()", "exp()", "raise()", "exponent()"], answer: 1}
+  ],
+  "C++": [
+    { q: "Which feature allows functions with the same name but different parameters?", options: ["Inheritance", "Overloading", "Polymorphism", "Encapsulation"], correct: 1 },
+    { q: "Which smart pointer prevents cyclic ownership by holding non-owning refs?", options: ["std::shared_ptr", "std::unique_ptr", "std::weak_ptr", "std::auto_ptr"], correct: 2 },
+    {q: "Which statement is used to skip iteration?", options: ["exit", "break", "continue", "pass"], answer: 2},
+{q: "Which extension is used for C++ source files?", options: [".cpp", ".cxx", ".cc", "all of these"], answer: 3},
+{q: "Which function is the entry point of every C++ program?", options: ["start()", "main()", "program()", "init()"], answer: 1},
+{q: "Which header file is needed for cout?", options: ["stdio.h", "iostream", "stdlib.h", "cstdio"], answer: 1},
+{q: "Which operator is used for input in C++?", options: ["<<", ">>", "->", "<-"], answer: 1},
+{q: "Which operator is used for output in C++?", options: ["<<", ">>", "->", "<-"], answer: 0},
+{q: "Which keyword is used to define a class?", options: ["struct", "class", "object", "define"], answer: 1},
+{q: "Which keyword is used for inheritance?", options: ["extends", "inherits", ":", "implements"], answer: 2},
+{q: "Which keyword is used for function overloading?", options: ["overload", "operator", "function", "No keyword"], answer: 3},
+{q: "Which feature of OOP allows using the same function name with different parameters?", options: ["Inheritance", "Polymorphism", "Encapsulation", "Overloading"], answer: 3},
+{q: "Which concept hides internal details of objects?", options: ["Inheritance", "Encapsulation", "Abstraction", "Polymorphism"], answer: 1},
+{q: "Which keyword is used to create objects dynamically?", options: ["malloc", "new", "alloc", "create"], answer: 1},
+{q: "Which keyword is used to free dynamic memory in C++?", options: ["free", "delete", "dispose", "remove"], answer: 1},
+{q: "Which constructor has no parameters?", options: ["Copy constructor", "Default constructor", "Parameterized constructor", "Virtual constructor"], answer: 1},
+{q: "Which constructor is used to copy objects?", options: ["Default constructor", "Copy constructor", "Parameterized constructor", "Virtual constructor"], answer: 1},
+{q: "Which operator is overloaded by the destructor?", options: ["~", "!", "delete", "None"], answer: 3},
+{q: "Which keyword is used to make a function not overrideable?", options: ["const", "final", "sealed", "fixed"], answer: 1},
+{q: "Which keyword makes a method belong to the class, not object?", options: ["static", "inline", "virtual", "const"], answer: 0},
+{q: "Which keyword is used to define constants in C++?", options: ["final", "constant", "const", "#define"], answer: 2},
+{q: "Which operator cannot be overloaded?", options: ["+", "=", "?", "::"], answer: 3},
+{q: "Which function is called automatically when an object is created?", options: ["Destructor", "Constructor", "Virtual function", "Friend function"], answer: 1},
+{q: "Which function is called automatically when an object goes out of scope?", options: ["Constructor", "Destructor", "Finalize", "Terminate"], answer: 1},
+{q: "Which keyword is used to inherit from multiple classes?", options: ["extends", "inherits", "multiple", "just use ,"], answer: 3},
+{q: "Which type of inheritance allows one base and many derived?", options: ["Multiple", "Hierarchical", "Hybrid", "Multilevel"], answer: 1},
+{q: "Which keyword allows base class function to be overridden?", options: ["static", "inline", "virtual", "const"], answer: 2},
+{q: "Which keyword is used to handle exceptions?", options: ["try", "catch", "throw", "all of these"], answer: 3},
+{q: "Which keyword is used to explicitly throw an exception?", options: ["try", "raise", "throw", "catch"], answer: 2},
+{q: "Which keyword is used to define templates?", options: ["template", "typename", "generic", "class"], answer: 0},
+{q: "Which keyword is used inside templates for type?", options: ["type", "typename", "class", "auto"], answer: 1},
+{q: "Which operator is overloaded by '<<' in iostream?", options: ["insertion", "extraction", "assignment", "comparison"], answer: 0},
+{q: "Which operator is overloaded by '>>' in iostream?", options: ["insertion", "extraction", "assignment", "comparison"], answer: 1},
+{q: "Which STL component stores unique elements?", options: ["vector", "set", "list", "map"], answer: 1},
+{q: "Which STL container allows key-value pairs?", options: ["vector", "set", "map", "list"], answer: 2},
+{q: "Which STL container is based on dynamic array?", options: ["vector", "set", "list", "queue"], answer: 0},
+{q: "Which STL container is a doubly linked list?", options: ["vector", "deque", "list", "stack"], answer: 2},
+{q: "Which STL adapter provides LIFO structure?", options: ["stack", "queue", "priority_queue", "deque"], answer: 0},
+{q: "Which STL adapter provides FIFO structure?", options: ["stack", "queue", "priority_queue", "deque"], answer: 1},
+{q: "Which STL adapter sorts elements automatically?", options: ["stack", "queue", "priority_queue", "deque"], answer: 2},
+{q: "Which function gives size of a container?", options: ["size()", "length()", "count()", "capacity()"], answer: 0},
+{q: "Which function adds element at end of vector?", options: ["push()", "append()", "push_back()", "add()"], answer: 2},
+{q: "Which function removes last element of vector?", options: ["pop()", "remove()", "pop_back()", "erase()"], answer: 2},
+{q: "Which function erases all elements of a vector?", options: ["delete()", "clear()", "reset()", "remove()"], answer: 1},
+{q: "Which iterator type can move forward only?", options: ["bidirectional", "forward", "random access", "input"], answer: 1},
+{q: "Which iterator type can move both ways?", options: ["forward", "bidirectional", "random access", "output"], answer: 1},
+{q: "Which iterator type supports arithmetic?", options: ["forward", "bidirectional", "random access", "input"], answer: 2},
+{q: "Which operator is used to access members of a pointer object?", options: [".", "->", "::", "*"], answer: 1},
+{q: "Which operator resolves scope ambiguity?", options: [".", "->", "::", ":"], answer: 2},
+{q: "Which keyword prevents inheritance?", options: ["const", "final", "sealed", "private"], answer: 1},
+{q: "Which keyword prevents overriding of virtual function?", options: ["const", "sealed", "final", "static"], answer: 2},
+{q: "Which feature of OOP represents 'is-a' relationship?", options: ["Encapsulation", "Polymorphism", "Inheritance", "Abstraction"], answer: 2},
+{q: "Which feature of OOP represents 'has-a' relationship?", options: ["Composition", "Inheritance", "Polymorphism", "Encapsulation"], answer: 0},
+{q: "Which casting is safer in C++?", options: ["implicit", "explicit", "static_cast", "reinterpret_cast"], answer: 2},
+{q: "Which casting is used for low-level reinterpretation?", options: ["static_cast", "reinterpret_cast", "const_cast", "dynamic_cast"], answer: 1},
+{q: "Which casting is used to remove const?", options: ["const_cast", "reinterpret_cast", "static_cast", "dynamic_cast"], answer: 0},
+{q: "Which casting is used for runtime type checking?", options: ["static_cast", "dynamic_cast", "reinterpret_cast", "const_cast"], answer: 1},
+{q: "Which keyword allows operator overloading?", options: ["overload", "operator", "op", "None"], answer: 1},
+{q: "Which operator is used to allocate array dynamically?", options: ["malloc", "new[]", "calloc", "array_new"], answer: 1},
+{q: "Which operator is used to deallocate array?", options: ["delete", "delete[]", "free", "dispose"], answer: 1},
+{q: "Which function in C++ converts int to string?", options: ["itoa()", "to_string()", "sprintf()", "str()"], answer: 1},
+{q: "Which function in C++ converts string to int?", options: ["stoi()", "atoi()", "toInt()", "convert()"], answer: 0},
+{q: "Which function in C++ converts string to float?", options: ["stof()", "atof()", "stod()", "convert()"], answer: 0},
+{q: "Which function in C++ converts string to double?", options: ["stod()", "stof()", "stold()", "convert()"], answer: 0},
+{q: "Which keyword is used for namespaces?", options: ["package", "namespace", "module", "scope"], answer: 1},
+{q: "Which operator is used to access namespace members?", options: [".", "::", "->", ":"], answer: 1},
+{q: "Which keyword is used for inline functions?", options: ["inline", "static", "virtual", "constexpr"], answer: 0},
+{q: "Which keyword is used for constant expressions?", options: ["inline", "static", "constexpr", "final"], answer: 2},
+{q: "Which function is automatically generated by compiler?", options: ["Constructor", "Destructor", "Copy Constructor", "All of these"], answer: 3},
+{q: "Which function cannot be virtual?", options: ["Constructor", "Destructor", "Operator function", "Member function"], answer: 0},
+{q: "Which memory region stores global variables?", options: ["Stack", "Heap", "Data segment", "Register"], answer: 2},
+{q: "Which memory region stores local variables?", options: ["Stack", "Heap", "Data segment", "Register"], answer: 0},
+{q: "Which memory region stores dynamically allocated variables?", options: ["Stack", "Heap", "Data segment", "Register"], answer: 1},
+{q: "Which loop in C++ is entry-controlled?", options: ["for", "while", "do-while", "all of these"], answer: 3},
+{q: "Which loop in C++ is exit-controlled?", options: ["for", "while", "do-while", "nested"], answer: 2},
+{q: "Which keyword skips current iteration?", options: ["exit", "break", "continue", "return"], answer: 2},
+{q: "Which function is used to get line of text input?", options: ["cin", "getline()", "gets()", "scanf()"], answer: 1},
+{q: "Which operator is overloaded by string concatenation?", options: ["+", "-", "*", "&"], answer: 0},
+{q: "Which operator is overloaded by string comparison?", options: ["==", ">", "<", "all of these"], answer: 3},
+{q: "Which header file is required for string class?", options: ["string.h", "cstring", "string", "str.h"], answer: 2},
+{q: "Which header file is required for vectors?", options: ["vector.h", "vector", "list", "array"], answer: 1},
+{q: "Which header file is required for sets?", options: ["set.h", "set", "collection", "map"], answer: 1},
+{q: "Which header file is required for maps?", options: ["map.h", "map", "dictionary", "unordered_map"], answer: 1},
+{q: "Which STL container maintains insertion order?", options: ["vector", "map", "set", "list"], answer: 0},
+{q: "Which STL container does not allow duplicates?", options: ["vector", "list", "set", "deque"], answer: 2},
+{q: "Which STL container allows duplicates?", options: ["multiset", "unordered_set", "map", "vector"], answer: 0},
+{q: "Which STL associative container allows duplicate keys?", options: ["map", "multimap", "unordered_map", "set"], answer: 1},
+{q: "Which STL unordered container is hash-based?", options: ["unordered_map", "unordered_set", "both", "none"], answer: 2},
+{q: "Which C++11 keyword declares automatic type?", options: ["auto", "var", "let", "dynamic"], answer: 0},
+{q: "Which C++11 feature supports range-based loops?", options: ["foreach", "for", "for-in", "range-for"], answer: 3},
+{q: "Which C++11 feature allows lambda functions?", options: ["lambda", "[]", "function", "auto"], answer: 1},
+{q: "Which keyword is used for multiple inheritance ambiguity resolution?", options: ["using", "scope", "virtual", "friend"], answer: 2},
+{q: "Which keyword allows a class to access private members of another?", options: ["friend", "public", "using", "virtual"], answer: 0},
+{q: "Which keyword is used for abstract classes?", options: ["virtual", "abstract", "interface", "pure"], answer: 0},
+{q: "Which keyword is used for pure virtual functions?", options: ["virtual", "abstract", "=0", "pure"], answer: 2}
+  ],
+  "Java": [
+    { q: "Which keyword creates a new object instance in Java?", options: ["create", "new", "instantiate", "alloc"], correct: 1 },
+    { q: "Which JVM area stores local variables and method frames?", options: ["Heap", "Stack", "Metaspace", "Method Area"], correct: 1 },
+    {q: "Which statement is used to skip iteration?", options: ["exit", "break", "continue", "pass"], answer: 2},
+{q: "Which is the entry point of every Java program?", options: ["start()", "init()", "main()", "run()"], answer: 2},
+{q: "Which keyword is used to define a class in Java?", options: ["struct", "class", "object", "define"], answer: 1},
+{q: "Which symbol is used to end a statement in Java?", options: [".", ":", ";", ","], answer: 2},
+{q: "Which keyword is used to inherit a class?", options: ["extends", "implements", "inherits", "derives"], answer: 0},
+{q: "Which keyword is used to implement an interface?", options: ["extends", "implements", "inherits", "interface"], answer: 1},
+{q: "Which keyword is used to define a constant?", options: ["const", "final", "static", "immutable"], answer: 1},
+{q: "Which keyword is used to prevent inheritance?", options: ["final", "sealed", "protected", "private"], answer: 0},
+{q: "Which keyword is used to prevent method overriding?", options: ["static", "final", "private", "sealed"], answer: 1},
+{q: "Which method is called when an object is created?", options: ["constructor", "finalize()", "init()", "start()"], answer: 0},
+{q: "Which method is called before garbage collection?", options: ["delete()", "finalize()", "dispose()", "end()"], answer: 1},
+{q: "Which operator is used for object creation?", options: ["malloc", "create", "new", "alloc"], answer: 2},
+{q: "Which operator is used for comparing references?", options: ["equals()", "==", "compareTo()", "isEqual()"], answer: 1},
+{q: "Which operator is used for string concatenation?", options: ["+", "&", ".", ","], answer: 0},
+{q: "Which method is used to compare strings?", options: ["==", "compareTo()", "equals()", "compare()"], answer: 2},
+{q: "Which method is used to get string length?", options: ["length()", "size()", "count()", "getLength()"], answer: 0},
+{q: "Which method is used to convert string to integer?", options: ["parseInt()", "toInt()", "valueOf()", "stoi()"], answer: 0},
+{q: "Which method is used to convert string to double?", options: ["parseDouble()", "toDouble()", "valueOf()", "stod()"], answer: 0},
+{q: "Which keyword is used to handle exceptions?", options: ["try", "catch", "throw", "all of these"], answer: 3},
+{q: "Which keyword is used to explicitly throw exception?", options: ["raise", "throw", "throws", "catch"], answer: 1},
+{q: "Which keyword is used to declare exceptions in method signature?", options: ["throw", "throws", "try", "catch"], answer: 1},
+{q: "Which block is always executed?", options: ["try", "catch", "throw", "finally"], answer: 3},
+{q: "Which package is the root of Java API?", options: ["java", "javax", "util", "lang"], answer: 3},
+{q: "Which class is the parent of all classes?", options: ["Class", "Object", "Base", "Super"], answer: 1},
+{q: "Which keyword is used for method overriding?", options: ["override", "virtual", "@Override", "super"], answer: 2},
+{q: "Which keyword is used to call parent class constructor?", options: ["this", "parent", "super", "base"], answer: 2},
+{q: "Which keyword is used to refer current object?", options: ["this", "self", "current", "object"], answer: 0},
+{q: "Which keyword is used for abstraction?", options: ["abstract", "virtual", "interface", "None"], answer: 0},
+{q: "Which keyword is used to create interface?", options: ["class", "abstract", "interface", "implements"], answer: 2},
+{q: "Which keyword is used for polymorphism?", options: ["extends", "implements", "virtual", "None"], answer: 3},
+{q: "Which keyword defines a package?", options: ["namespace", "package", "module", "import"], answer: 1},
+{q: "Which keyword is used to import packages?", options: ["package", "include", "import", "using"], answer: 2},
+{q: "Which collection class allows duplicates?", options: ["Set", "Map", "List", "None"], answer: 2},
+{q: "Which collection class does not allow duplicates?", options: ["Set", "Map", "List", "Queue"], answer: 0},
+{q: "Which collection class stores key-value pairs?", options: ["Set", "List", "Map", "Queue"], answer: 2},
+{q: "Which class is synchronized?", options: ["ArrayList", "Vector", "HashSet", "HashMap"], answer: 1},
+{q: "Which class is unsynchronized?", options: ["Vector", "Hashtable", "HashMap", "Stack"], answer: 2},
+{q: "Which interface is implemented by all collections?", options: ["Collection", "Iterable", "List", "Iterator"], answer: 1},
+{q: "Which interface provides forward-only iteration?", options: ["Collection", "Iterator", "ListIterator", "Stream"], answer: 1},
+{q: "Which interface provides bi-directional iteration?", options: ["Iterator", "ListIterator", "Stream", "Enumeration"], answer: 1},
+{q: "Which thread method starts execution?", options: ["run()", "start()", "execute()", "begin()"], answer: 1},
+{q: "Which thread method stops execution temporarily?", options: ["stop()", "wait()", "sleep()", "pause()"], answer: 2},
+{q: "Which thread method waits for another thread?", options: ["join()", "wait()", "sleep()", "yield()"], answer: 0},
+{q: "Which thread method releases lock and waits?", options: ["sleep()", "wait()", "notify()", "yield()"], answer: 1},
+{q: "Which thread method wakes waiting threads?", options: ["notify()", "signal()", "resume()", "wake()"], answer: 0},
+{q: "Which thread method wakes all waiting threads?", options: ["notify()", "notifyAll()", "resume()", "wakeAll()"], answer: 1},
+{q: "Which thread method gives chance to other threads?", options: ["sleep()", "yield()", "wait()", "pause()"], answer: 1},
+{q: "Which keyword is used to make thread safe?", options: ["static", "final", "synchronized", "volatile"], answer: 2},
+{q: "Which keyword ensures visibility across threads?", options: ["final", "volatile", "synchronized", "const"], answer: 1},
+{q: "Which method is used to get current thread?", options: ["Thread.currentThread()", "thisThread()", "current()", "getThread()"], answer: 0},
+{q: "Which method is used to get thread priority?", options: ["getPriority()", "priority()", "threadPriority()", "getLevel()"], answer: 0},
+{q: "Which is the default thread priority?", options: ["1", "5", "10", "0"], answer: 1},
+{q: "Which keyword is used for memory cleanup suggestion?", options: ["clean()", "finalize()", "gc()", "System.gc()"], answer: 3},
+{q: "Which keyword is used to stop inheritance chain?", options: ["const", "final", "private", "sealed"], answer: 1},
+{q: "Which access modifier allows access within package only?", options: ["public", "private", "protected", "default"], answer: 3},
+{q: "Which access modifier allows access everywhere?", options: ["private", "protected", "public", "default"], answer: 2},
+{q: "Which access modifier allows subclass access?", options: ["private", "protected", "public", "default"], answer: 1},
+{q: "Which keyword is used for garbage collection?", options: ["delete", "dispose", "free", "None"], answer: 3},
+{q: "Which keyword is used to allocate memory in Java?", options: ["malloc", "calloc", "new", "alloc"], answer: 2},
+{q: "Which keyword is used for lambda expressions?", options: ["lambda", "->", "function", "=>"], answer: 1},
+{q: "Which Java 8 feature supports functional programming?", options: ["Streams", "Lambda", "Functional interfaces", "All of these"], answer: 3},
+{q: "Which functional interface represents a supplier?", options: ["Consumer", "Supplier", "Function", "Predicate"], answer: 1},
+{q: "Which functional interface represents a consumer?", options: ["Consumer", "Supplier", "Function", "Predicate"], answer: 0},
+{q: "Which functional interface returns boolean?", options: ["Consumer", "Supplier", "Function", "Predicate"], answer: 3},
+{q: "Which functional interface represents a mapping?", options: ["Consumer", "Supplier", "Function", "Predicate"], answer: 2},
+{q: "Which stream operation is terminal?", options: ["map()", "filter()", "forEach()", "peek()"], answer: 2},
+{q: "Which stream operation is intermediate?", options: ["map()", "filter()", "forEach()", "collect()"], answer: 0},
+{q: "Which class is immutable in Java?", options: ["String", "StringBuilder", "StringBuffer", "ArrayList"], answer: 0},
+{q: "Which class is mutable in Java?", options: ["String", "StringBuilder", "StringBuffer", "both 2 and 3"], answer: 3},
+{q: "Which class is thread-safe?", options: ["String", "StringBuilder", "StringBuffer", "ArrayList"], answer: 2},
+{q: "Which method is used to get string in lowercase?", options: ["toLowerCase()", "lower()", "strlower()", "caseDown()"], answer: 0},
+{q: "Which method is used to get string in uppercase?", options: ["toUpperCase()", "upper()", "strupper()", "caseUp()"], answer: 0},
+{q: "Which method is used to trim spaces in string?", options: ["removeSpaces()", "strip()", "trim()", "deleteSpaces()"], answer: 2},
+{q: "Which wrapper class is used for int?", options: ["Integer", "Int", "Number", "Double"], answer: 0},
+{q: "Which wrapper class is used for double?", options: ["Integer", "Float", "Double", "Long"], answer: 2},
+{q: "Which wrapper class is used for boolean?", options: ["Boolean", "Bool", "Logic", "Char"], answer: 0},
+{q: "Which method converts primitive to wrapper?", options: ["parse()", "valueOf()", "wrap()", "cast()"], answer: 1},
+{q: "Which method converts wrapper to primitive?", options: ["parse()", "intValue()", "unwrap()", "primitive()"], answer: 1},
+{q: "Which keyword is used to create enum?", options: ["enum", "enumeration", "define", "constant"], answer: 0},
+{q: "Which keyword is used to define annotation?", options: ["@", "annotation", "define", "meta"], answer: 0},
+{q: "Which collection interface extends Queue?", options: ["Deque", "Stack", "List", "Set"], answer: 0},
+{q: "Which collection class allows priority ordering?", options: ["PriorityQueue", "TreeSet", "HashMap", "Vector"], answer: 0},
+{q: "Which collection class maintains insertion order?", options: ["HashSet", "TreeSet", "LinkedHashSet", "EnumSet"], answer: 2},
+{q: "Which collection class sorts elements naturally?", options: ["TreeSet", "HashSet", "LinkedHashSet", "Vector"], answer: 0},
+{q: "Which collection class allows null key?", options: ["HashMap", "TreeMap", "Hashtable", "EnumMap"], answer: 0},
+{q: "Which collection class does not allow null key?", options: ["HashMap", "TreeMap", "Hashtable", "LinkedHashMap"], answer: 2},
+{q: "Which class provides resizable array?", options: ["Array", "ArrayList", "Vector", "Stack"], answer: 1},
+{q: "Which class provides last-in first-out?", options: ["Queue", "Stack", "Deque", "Vector"], answer: 1},
+{q: "Which class implements hash table?", options: ["HashMap", "Hashtable", "TreeMap", "HashSet"], answer: 1},
+{q: "Which keyword is used for type inference in Java 10?", options: ["var", "auto", "let", "dynamic"], answer: 0},
+{q: "Which keyword is used in Java 14 for pattern matching?", options: ["match", "instanceof", "pattern", "case"], answer: 1},
+{q: "Which keyword is used in Java 16 for records?", options: ["record", "data", "struct", "final"], answer: 0}
+  ],
+  "JavaScript": [
+    { q: "Which keyword declares a block-scoped variable?", options: ["var", "let", "function", "constantly"], correct: 1 },
+    { q: "What is a Promise in JavaScript?", options: ["Synchronous callback","An object representing future completion","A special variable","A DOM node"], correct: 1 },
+    {q: "Which statement is used to skip iteration?", options: ["exit", "break", "continue", "pass"], answer: 2},
+{q: "Which keyword is used to declare a variable in JavaScript?", options: ["var", "let", "const", "all of these"], answer: 3},
+{q: "Which keyword declares a block-scoped variable?", options: ["var", "let", "const", "static"], answer: 1},
+{q: "Which keyword declares a constant variable?", options: ["let", "const", "var", "final"], answer: 1},
+{q: "Which symbol is used to end a statement?", options: [".", ":", ";", ","], answer: 2},
+{q: "Which operator is used for strict equality?", options: ["==", "===", "=", "!=",], answer: 1},
+{q: "Which operator is used for assignment?", options: ["==", "===", "=", "=>"], answer: 2},
+{q: "Which operator is used for arrow functions?", options: ["->", "=>", "::", ":"], answer: 1},
+{q: "Which function is used to print to console?", options: ["print()", "echo()", "console.log()", "log()"], answer: 2},
+{q: "Which function is used to display alert box?", options: ["alert()", "message()", "prompt()", "confirm()"], answer: 0},
+{q: "Which function is used to get user input?", options: ["alert()", "prompt()", "confirm()", "input()"], answer: 1},
+{q: "Which function asks user confirmation?", options: ["alert()", "prompt()", "confirm()", "ask()"], answer: 2},
+{q: "Which method parses a string to integer?", options: ["parseInt()", "parseFloat()", "Number()", "toInt()"], answer: 0},
+{q: "Which method parses a string to float?", options: ["parseInt()", "parseFloat()", "Number()", "toFloat()"], answer: 1},
+{q: "Which global object represents infinity?", options: ["NaN", "undefined", "Infinity", "Number.MAX"], answer: 2},
+{q: "Which value represents 'not a number'?", options: ["NaN", "null", "undefined", "false"], answer: 0},
+{q: "Which type is returned by typeof null?", options: ["null", "undefined", "object", "NaN"], answer: 2},
+{q: "Which type is returned by typeof undefined?", options: ["null", "undefined", "object", "string"], answer: 1},
+{q: "Which type is returned by typeof NaN?", options: ["number", "string", "undefined", "object"], answer: 0},
+{q: "Which keyword is used for function declaration?", options: ["func", "function", "fn", "def"], answer: 1},
+{q: "Which keyword is used for default return type?", options: ["void", "undefined", "return", "None"], answer: 1},
+{q: "Which keyword is used for object-oriented class?", options: ["object", "class", "struct", "prototype"], answer: 1},
+{q: "Which keyword is used for inheritance?", options: ["inherits", "extends", "implements", "prototype"], answer: 1},
+{q: "Which keyword is used for asynchronous functions?", options: ["await", "async", "promise", "defer"], answer: 1},
+{q: "Which keyword pauses execution inside async?", options: ["wait", "await", "sleep", "pause"], answer: 1},
+{q: "Which object represents a promise?", options: ["Promise", "Future", "Async", "Task"], answer: 0},
+{q: "Which method registers a success callback for Promise?", options: ["then()", "catch()", "finally()", "done()"], answer: 0},
+{q: "Which method registers an error callback for Promise?", options: ["then()", "catch()", "finally()", "error()"], answer: 1},
+{q: "Which method runs after promise finishes?", options: ["then()", "catch()", "finally()", "end()"], answer: 2},
+{q: "Which function is used to delay execution?", options: ["setTimeout()", "setInterval()", "delay()", "sleep()"], answer: 0},
+{q: "Which function is used to execute repeatedly?", options: ["setTimeout()", "setInterval()", "repeat()", "loop()"], answer: 1},
+{q: "Which function cancels timeout?", options: ["clearInterval()", "cancelTimeout()", "clearTimeout()", "stop()"], answer: 2},
+{q: "Which function cancels interval?", options: ["clearTimeout()", "stopInterval()", "clearInterval()", "cancel()"], answer: 2},
+{q: "Which method adds element to end of array?", options: ["push()", "pop()", "shift()", "unshift()"], answer: 0},
+{q: "Which method removes last element of array?", options: ["push()", "pop()", "shift()", "splice()"], answer: 1},
+{q: "Which method adds element to beginning of array?", options: ["push()", "pop()", "shift()", "unshift()"], answer: 3},
+{q: "Which method removes first element of array?", options: ["shift()", "pop()", "splice()", "slice()"], answer: 0},
+{q: "Which method joins all array elements?", options: ["concat()", "join()", "toString()", "combine()"], answer: 1},
+{q: "Which method returns array length?", options: ["size()", "count()", "length", "len()"], answer: 2},
+{q: "Which method combines two arrays?", options: ["concat()", "merge()", "append()", "join()"], answer: 0},
+{q: "Which method creates shallow copy of array?", options: ["slice()", "splice()", "copy()", "clone()"], answer: 0},
+{q: "Which method removes or replaces array elements?", options: ["slice()", "splice()", "split()", "delete()"], answer: 1},
+{q: "Which method converts string to array?", options: ["split()", "slice()", "splice()", "parse()"], answer: 0},
+{q: "Which method converts array to string?", options: ["join()", "toString()", "stringify()", "both 1 and 2"], answer: 3},
+{q: "Which method converts object to JSON string?", options: ["JSON.parse()", "JSON.stringify()", "stringify()", "toJSON()"], answer: 1},
+{q: "Which method parses JSON string?", options: ["JSON.parse()", "JSON.stringify()", "parse()", "toJSON()"], answer: 0},
+{q: "Which operator spreads elements?", options: ["...", "=>", "::", "**"], answer: 0},
+{q: "Which operator collects rest parameters?", options: ["...", "&&", "||", "??"], answer: 0},
+{q: "Which operator provides default value?", options: ["||", "??", "&&", "?:",], answer: 1},
+{q: "Which loop checks condition before execution?", options: ["for", "while", "do-while", "for-in"], answer: 1},
+{q: "Which loop checks condition after execution?", options: ["for", "while", "do-while", "for-of"], answer: 2},
+{q: "Which loop iterates object keys?", options: ["for-in", "for-of", "foreach()", "map()"], answer: 0},
+{q: "Which loop iterates iterable values?", options: ["for-in", "for-of", "foreach()", "map()"], answer: 1},
+{q: "Which array method tests all elements?", options: ["every()", "some()", "filter()", "find()"], answer: 0},
+{q: "Which array method tests at least one element?", options: ["every()", "some()", "filter()", "find()"], answer: 1},
+{q: "Which array method creates filtered array?", options: ["filter()", "find()", "map()", "reduce()"], answer: 0},
+{q: "Which array method creates mapped array?", options: ["map()", "filter()", "reduce()", "find()"], answer: 0},
+{q: "Which array method reduces to single value?", options: ["reduce()", "map()", "filter()", "sum()"], answer: 0},
+{q: "Which array method finds first matching element?", options: ["filter()", "find()", "some()", "match()"], answer: 1},
+{q: "Which array method sorts elements?", options: ["sort()", "order()", "arrange()", "compare()"], answer: 0},
+{q: "Which array method reverses elements?", options: ["invert()", "reverse()", "flip()", "back()"], answer: 1},
+{q: "Which string method gets character at index?", options: ["charAt()", "char()", "getChar()", "substring()"], answer: 0},
+{q: "Which string method gets substring?", options: ["substr()", "slice()", "substring()", "all of these"], answer: 3},
+{q: "Which string method trims spaces?", options: ["trim()", "strip()", "removeSpaces()", "delete()"], answer: 0},
+{q: "Which string method converts to lowercase?", options: ["toLowerCase()", "lower()", "downcase()", "lc()"], answer: 0},
+{q: "Which string method converts to uppercase?", options: ["toUpperCase()", "upper()", "upcase()", "uc()"], answer: 0},
+{q: "Which string method replaces text?", options: ["replace()", "sub()", "change()", "swap()"], answer: 0},
+{q: "Which string method matches regex?", options: ["match()", "search()", "test()", "all of these"], answer: 3},
+{q: "Which string method checks substring presence?", options: ["includes()", "contains()", "has()", "find()"], answer: 0},
+{q: "Which string method repeats string?", options: ["repeat()", "times()", "clone()", "copy()"], answer: 0},
+{q: "Which string method pads start?", options: ["padStart()", "padLeft()", "leftPad()", "fillStart()"], answer: 0},
+{q: "Which string method pads end?", options: ["padEnd()", "padRight()", "rightPad()", "fillEnd()"], answer: 0},
+{q: "Which function checks if value is NaN?", options: ["isNaN()", "Number.isNaN()", "checkNaN()", "both 1 and 2"], answer: 3},
+{q: "Which function checks if value is finite?", options: ["isFinite()", "Number.isFinite()", "checkFinite()", "both 1 and 2"], answer: 3},
+{q: "Which keyword defines default case in switch?", options: ["else", "default", "case", "final"], answer: 1},
+{q: "Which event is triggered when button is clicked?", options: ["onclick", "onpress", "onhover", "onchange"], answer: 0},
+{q: "Which event is triggered when input changes?", options: ["onclick", "onpress", "onhover", "onchange"], answer: 3},
+{q: "Which event is triggered when mouse enters element?", options: ["onmouseover", "onmouseenter", "onhover", "all of these"], answer: 3},
+{q: "Which event is triggered when key is pressed?", options: ["onpress", "onkeydown", "onkeyup", "onkey()"], answer: 1},
+{q: "Which event is triggered when page loads?", options: ["onload", "onready", "onstart", "begin"], answer: 0},
+{q: "Which object represents browser window?", options: ["document", "window", "navigator", "location"], answer: 1},
+{q: "Which object represents webpage?", options: ["document", "window", "navigator", "screen"], answer: 0},
+{q: "Which object provides browser info?", options: ["document", "window", "navigator", "location"], answer: 2},
+{q: "Which object provides URL info?", options: ["document", "window", "navigator", "location"], answer: 3},
+{q: "Which object provides screen info?", options: ["screen", "window", "document", "navigator"], answer: 0},
+{q: "Which method selects element by id?", options: ["getElementById()", "querySelector()", "find()", "selectId()"], answer: 0},
+{q: "Which method selects first matching CSS selector?", options: ["querySelector()", "querySelectorAll()", "getElementById()", "find()"], answer: 0},
+{q: "Which method selects all matching CSS selectors?", options: ["querySelector()", "querySelectorAll()", "getElements()", "findAll()"], answer: 1},
+{q: "Which method creates new HTML element?", options: ["create()", "createElement()", "newElement()", "addElement()"], answer: 1},
+{q: "Which method appends element to parent?", options: ["append()", "appendChild()", "add()", "insert()"], answer: 1},
+{q: "Which method removes child element?", options: ["remove()", "removeChild()", "delete()", "clear()"], answer: 1},
+{q: "Which property sets inner text of element?", options: ["innerHTML", "textContent", "value", "both 1 and 2"], answer: 3},
+{q: "Which property sets inner HTML of element?", options: ["innerText", "textContent", "innerHTML", "value"], answer: 2},
+{q: "Which property sets form input value?", options: ["innerText", "text", "value", "content"], answer: 2}
+  ],
+  "Python": [
+    { q: "Which data type is immutable in Python?", options: ["list", "dict", "tuple", "set"], correct: 2 },
+    { q: "What does the 'yield' keyword create?", options: ["A list", "A generator", "A class", "A module"], correct: 1 },
+    {q: "Which statement is used to skip iteration?", options: ["exit", "break", "continue", "pass"], answer: 2},
+{q: "What is the correct file extension for Python files?", options: [".pt", ".pyt", ".py", ".p"], answer: 2},
+{q: "Which keyword is used to define a function in Python?", options: ["def", "function", "fun", "define"], answer: 0},
+{q: "How do you insert COMMENTS in Python code?", options: ["// comment", "/* comment */", "# comment", "<!-- comment -->"], answer: 2},
+{q: "What data type is the result of: type(3/2)?", options: ["int", "float", "double", "decimal"], answer: 1},
+{q: "Which method is used to remove whitespace from the beginning and end of a string?", options: ["trim()", "strip()", "remove()", "rstrip()"], answer: 1},
+{q: "Which of the following is immutable in Python?", options: ["list", "set", "dict", "tuple"], answer: 3},
+{q: "What is the output of bool(0)?", options: ["True", "False", "0", "None"], answer: 1},
+{q: "Which of these is NOT a Python data type?", options: ["set", "dict", "array", "tuple"], answer: 2},
+{q: "Which operator is used for exponentiation?", options: ["^", "**", "exp()", "pow"], answer: 1},
+{q: "What will print(type([])) return?", options: ["<class 'list'>", "<class 'tuple'>", "<class 'set'>", "<class 'dict'>"], answer: 0},
+{q: "Which keyword is used to create a class in Python?", options: ["function", "method", "def", "class"], answer: 3},
+{q: "Which statement is used to handle exceptions?", options: ["if", "try-except", "catch", "error"], answer: 1},
+{q: "What is the default return value of a function with no return statement?", options: ["0", "False", "None", "undefined"], answer: 2},
+{q: "Which function gives the length of a list?", options: ["count()", "length()", "len()", "size()"], answer: 2},
+{q: "Which of the following is used to create an empty set?", options: ["{}", "set()", "[]", "()"], answer: 1},
+{q: "Which keyword is used to define an anonymous function?", options: ["lambda", "def", "func", "return"], answer: 0},
+{q: "What is the result of 'Python'[::-1]?", options: ["nohtyP", "Python", "Error", "None"], answer: 0},
+{q: "Which operator is used for floor division?", options: ["/", "//", "%", "**"], answer: 1},
+{q: "What is the output of 5 % 2?", options: ["2", "1", "0", "5"], answer: 1},
+{q: "Which function converts a string to lowercase?", options: ["lower()", "tolower()", "down()", "case()"], answer: 0},
+{q: "Which keyword is used to import a module?", options: ["package", "import", "using", "include"], answer: 1},
+{q: "Which built-in function can sort a list?", options: ["sorted()", "sort()", "arrange()", "order()"], answer: 0},
+{q: "Which symbol is used for string concatenation?", options: ["&", "+", ".", "*"], answer: 1},
+{q: "Which of these creates a dictionary?", options: ["[]", "{}", "()", "<>"], answer: 1},
+{q: "What does list(range(3)) return?", options: ["[1,2,3]", "[0,1,2]", "[0,1,2,3]", "Error"], answer: 1},
+{q: "Which of the following is a Python boolean literal?", options: ["true", "TRUE", "True", "1"], answer: 2},
+{q: "Which function is used to get user input?", options: ["input()", "scan()", "read()", "get()"], answer: 0},
+{q: "Which function gives ASCII value of a character?", options: ["ord()", "ascii()", "chr()", "code()"], answer: 0},
+{q: "Which function returns character from ASCII code?", options: ["ord()", "ascii()", "chr()", "code()"], answer: 2},
+{q: "Which keyword is used to check membership in lists?", options: ["inside", "in", "exists", "within"], answer: 1},
+{q: "What does the 'is' operator compare?", options: ["values", "types", "identity", "contents"], answer: 2},
+{q: "Which function returns max value from a list?", options: ["maximum()", "max()", "high()", "top()"], answer: 1},
+{q: "Which keyword ends a loop forcibly?", options: ["stop", "break", "exit", "terminate"], answer: 1},
+{q: "What does dict.keys() return?", options: ["list", "tuple", "view object", "dict"], answer: 2},
+{q: "Which module is used for regular expressions?", options: ["regex", "pyregex", "re", "expr"], answer: 2},
+{q: "Which module is used to generate random numbers?", options: ["math", "random", "numbers", "numpy"], answer: 1},
+{q: "Which function converts string to int?", options: ["toInt()", "parseInt()", "int()", "str()"], answer: 2},
+{q: "Which keyword is used to inherit a class?", options: ["inherit", "extends", "super", "class"], answer: 3},
+{q: "Which statement is used with functions to return values?", options: ["yield", "give", "return", "output"], answer: 2},
+{q: "Which keyword is used to stop a function temporarily and resume later?", options: ["pause", "await", "yield", "stop"], answer: 2},
+{q: "Which operator is overloaded by __add__()?", options: ["+", "-", "*", "/"], answer: 0},
+{q: "Which operator is overloaded by __eq__()?", options: ["=", "==", "!=", "<="], answer: 1},
+{q: "What is the default base for int() conversion?", options: ["2", "8", "10", "16"], answer: 2},
+{q: "What is the output of type({})?", options: ["dict", "set", "list", "tuple"], answer: 0},
+{q: "Which keyword creates an iterator from a function?", options: ["generator", "yield", "iter", "next"], answer: 1},
+{q: "Which exception occurs for division by zero?", options: ["ValueError", "ZeroDivisionError", "TypeError", "RuntimeError"], answer: 1},
+{q: "Which module supports mathematical functions like sqrt()?", options: ["cmath", "math", "numpy", "statistics"], answer: 1},
+{q: "Which function is used to convert decimal to binary?", options: ["bin()", "binary()", "toBinary()", "str()"], answer: 0},
+{q: "Which method adds an element to a list?", options: ["insert()", "append()", "add()", "push()"], answer: 1},
+{q: "Which method removes last element of a list?", options: ["pop()", "delete()", "remove()", "cut()"], answer: 0},
+{q: "Which function returns absolute value?", options: ["abs()", "fabs()", "absolute()", "mod()"], answer: 0},
+{q: "What will print('A' * 3) output?", options: ["AAA", "A3", "Error", "None"], answer: 0},
+{q: "Which of these is not a Python loop?", options: ["for", "while", "do-while", "nested"], answer: 2},
+{q: "Which function returns current Python version?", options: ["version()", "sys.version", "python_version()", "os.version()"], answer: 1},
+{q: "What is the size of an empty list in Python?", options: ["0", "Error", "depends on system", "None"], answer: 0},
+{q: "What will len('') return?", options: ["0", "1", "None", "Error"], answer: 0},
+{q: "Which of the following is not a Python keyword?", options: ["assert", "nonlocal", "with", "include"], answer: 3},
+{q: "Which keyword is used to declare a variable inside a function as global?", options: ["all", "global", "extern", "public"], answer: 1},
+{q: "Which keyword is used for null value in Python?", options: ["null", "none", "None", "nil"], answer: 2},
+{q: "Which operator is used for modulus?", options: ["/", "%", "mod()", "//"], answer: 1},
+{q: "Which statement is true about Python?", options: ["Interpreted", "Compiled", "Assembly", "Machine code"], answer: 0},
+{q: "Which function is used to open a file?", options: ["file()", "open()", "read()", "fopen()"], answer: 1},
+{q: "Which file mode is used for writing?", options: ["r", "w", "rw", "wr"], answer: 1},
+{q: "Which file method is used to read all lines?", options: ["readlines()", "readall()", "getlines()", "lines()"], answer: 0},
+{q: "What is the default mode of open()?", options: ["write", "append", "read", "binary"], answer: 2},
+{q: "Which function is used to close a file?", options: ["stop()", "end()", "close()", "exit()"], answer: 2},
+{q: "Which module provides JSON support?", options: ["json", "pickle", "yaml", "marshal"], answer: 0},
+{q: "Which function converts Python object to JSON string?", options: ["dumps()", "dump()", "loads()", "parse()"], answer: 0},
+{q: "Which keyword is used for loop iteration with index?", options: ["enumerate", "range", "zip", "map"], answer: 0},
+{q: "Which keyword is used for asynchronous programming?", options: ["async", "await", "yield", "thread"], answer: 0},
+{q: "Which operator is overloaded by __mul__()?", options: ["*", "+", "-", "/"], answer: 0},
+{q: "Which operator is overloaded by __len__()?", options: ["len()", "()", "[]", "in"], answer: 0},
+{q: "Which Python collection is ordered and changeable?", options: ["list", "set", "tuple", "dict"], answer: 0},
+{q: "Which collection is unordered and immutable?", options: ["set", "tuple", "list", "dict"], answer: 1},
+{q: "Which method is used to copy a list?", options: ["copy()", "clone()", "duplicate()", "list()"], answer: 0},
+{q: "Which function is used to check the type of a variable?", options: ["type()", "check()", "class()", "instance()"], answer: 0},
+{q: "Which function is used to convert int to string?", options: ["string()", "str()", "format()", "repr()"], answer: 1},
+{q: "Which function rounds a number?", options: ["floor()", "ceil()", "round()", "math.round()"], answer: 2},
+{q: "Which operator checks value equality?", options: ["=", "==", "is", "==="], answer: 1},
+{q: "Which operator checks inequality?", options: ["<>", "!=", "!==", "><"], answer: 1},
+{q: "Which of the following is a valid variable name?", options: ["2var", "_var", "var-name", "class"], answer: 1},
+{q: "Which function returns all attributes of an object?", options: ["dir()", "vars()", "attr()", "get()"], answer: 0},
+{q: "Which module is used for system-specific parameters?", options: ["os", "sys", "platform", "system"], answer: 1},
+{q: "Which Python function executes a string as code?", options: ["eval()", "exec()", "execute()", "compile()"], answer: 1},
+{q: "Which module is used for date and time?", options: ["calendar", "time", "datetime", "clock"], answer: 2},
+{q: "Which function generates a sequence of numbers?", options: ["seq()", "series()", "range()", "list()"], answer: 2},
+{q: "Which keyword is used for defining constants in Python?", options: ["const", "final", "static", "No keyword"], answer: 3},
+{q: "Which method removes element by value from list?", options: ["remove()", "delete()", "pop()", "discard()"], answer: 0},
+{q: "Which operator is overloaded by __getitem__()?", options: ["[]", "()", "{}", "."], answer: 0},
+{q: "Which operator is overloaded by __call__()?", options: ["()", "[]", ".", "{}"], answer: 0},
+{q: "Which function creates an iterator?", options: ["iter()", "next()", "gen()", "yield"], answer: 0},
+{q: "Which function fetches next item from iterator?", options: ["iter()", "next()", "yield()", "gen()"], answer: 1},
+{q: "Which keyword is used for defining modules?", options: ["module", "package", "No keyword", "defmodule"], answer: 2},
+{q: "Which method adds multiple elements to a set?", options: ["extend()", "append()", "update()", "insert()"], answer: 2},
+{q: "Which method removes arbitrary element from a set?", options: ["delete()", "pop()", "remove()", "discard()"], answer: 1},
+{q: "Which function checks memory address of object?", options: ["id()", "address()", "loc()", "ref()"], answer: 0},
+{q: "Which statement is true about Python variables?", options: ["Declared type required", "Dynamic typing", "Static typing", "Fixed size"], answer: 1},
+{q: "Which keyword creates a new exception class?", options: ["throw", "raise", "exception", "class"], answer: 3},
+{q: "Which keyword is used to raise exception?", options: ["raise", "throw", "except", "error"], answer: 0}
+
+  ]
+};
+
+// --- App state
+let state = {
+  selectedLang: null,
+  questions: [],
+  answers: {}, // index->selected option index
+  currentIndex: 0,
+  submitted: false,
+  score: null
+};
+
+// --- DOM refs
+const langRow = document.getElementById('langRow');
+const startBtn = document.getElementById('startBtn');
+const selectedLangEl = document.getElementById('selectedLang');
+const questionArea = document.getElementById('questionArea');
+const qIndexEl = document.getElementById('qIndex');
+const qTotalEl = document.getElementById('qTotal');
+const qText = document.getElementById('qText');
+const optionsEl = document.getElementById('options');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const submitBtn = document.getElementById('submitBtn');
+const resultBlock = document.getElementById('resultBlock');
+const answerKey = document.getElementById('answerKey');
+const playerName = document.getElementById('playerName');
+const saveScoreBtn = document.getElementById('saveScoreBtn');
+const lbBody = document.getElementById('lbBody');
+const clearLb = document.getElementById('clearLb');
+
+// --- Initialize language buttons
+Object.keys(BANK).forEach(lang => {
+  const b = document.createElement('button');
+  b.className = 'lang-btn';
+  b.textContent = lang;
+  b.dataset.lang = lang;
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state.selectedLang = lang;
+    selectedLangEl.textContent = lang;
+    // reset previous run state
+    state.questions = BANK[lang].slice();
+    state.answers = {};
+    state.currentIndex = 0;
+    state.submitted = false;
+    state.score = null;
+    questionArea.style.display = 'none';
+    resultBlock.style.display = 'none';
+    answerKey.style.display = 'none';
+  });
+  langRow.appendChild(b);
+});
+
+// --- Start quiz
+startBtn.addEventListener('click', ()=>{
+  if (!state.selectedLang){ alert('Please select a language to start the quiz.'); return; }
+  state.questions = BANK[state.selectedLang].slice();
+  state.answers = {};
+  state.currentIndex = 0;
+  state.submitted = false;
+  state.score = null;
+  questionArea.style.display = '';
+  renderQuestion();
+});
+
+// --- Render current question
+function renderQuestion(){
+  const qs = state.questions;
+  const idx = state.currentIndex;
+  qIndexEl.textContent = idx+1;
+  qTotalEl.textContent = qs.length;
+  const item = qs[idx];
+  qText.textContent = item.q;
+  optionsEl.innerHTML = '';
+  item.options.forEach((opt,i)=>{
+    const id = `opt_${idx}_${i}`;
+    const label = document.createElement('label'); label.className = 'opt';
+    const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'option'; radio.value = i; radio.id = id;
+    if (state.answers.hasOwnProperty(idx) && state.answers[idx] === i){ radio.checked = true; }
+    radio.addEventListener('change', ()=>{ state.answers[idx] = i; });
+    label.appendChild(radio);
+    const span = document.createElement('span'); span.textContent = ' ' + opt;
+    label.appendChild(span);
+    optionsEl.appendChild(label);
+  });
+
+  // nav buttons
+  prevBtn.disabled = idx === 0;
+  nextBtn.disabled = idx === qs.length - 1;
+
+  // if submitted, show feedback per question
+  if (state.submitted){
+    showSubmittedState();
+  }
+}
+
+prevBtn.addEventListener('click', ()=>{
+  if (state.currentIndex > 0){ state.currentIndex--; renderQuestion(); }
+});
+nextBtn.addEventListener('click', ()=>{
+  if (state.currentIndex < state.questions.length -1){ state.currentIndex++; renderQuestion(); }
+});
+
+// --- Submit test
+submitBtn.addEventListener('click', ()=>{
+  if (state.submitted){ alert('Test already submitted.'); return; }
+  // compute score
+  const qs = state.questions;
+  let correct = 0;
+  for (let i=0;i<qs.length;i++){
+    const got = state.answers[i];
+    if (got !== undefined && got === qs[i].correct) correct++;
+  }
+  state.score = Math.round((correct/qs.length)*100);
+  state.submitted = true;
+  resultBlock.style.display = '';
+  resultBlock.innerHTML = `<div class="small"><strong>Score:</strong> ${correct} / ${qs.length} (${state.score}%)</div>` +
+                          `<div class="small">Grade: ${gradeFromPct(state.score)}</div>`;
+  // show answer key
+  const lines = qs.map((q,i)=> `Q${i+1}: ${q.options[q.correct]}`);
+  answerKey.style.display = '';
+  answerKey.textContent = lines.join('\n');
+  // show per-question feedback on current question
+  showSubmittedState();
+});
+
+function showSubmittedState(){
+  const idx = state.currentIndex;
+  const qs = state.questions;
+  const labels = optionsEl.querySelectorAll('label.opt');
+  labels.forEach((lab, i)=>{
+    lab.style.border = '1px solid #e6eefc';
+    lab.style.background = '#fbfdff';
+    lab.style.color = '#0b1320';
+  });
+  // highlight correct and chosen
+  const correctIdx = qs[idx].correct;
+  const correctLabel = labels[correctIdx];
+  if (correctLabel){ correctLabel.style.border = '2px solid green'; correctLabel.style.background = '#ecfff0'; }
+  const chosen = state.answers[idx];
+  if (chosen !== undefined && chosen !== correctIdx){ const chosenLabel = labels[chosen]; if (chosenLabel){ chosenLabel.style.border = '2px solid red'; chosenLabel.style.background = '#fff0f0'; } }
+}
+
+function gradeFromPct(p){ if (p>=85) return 'A'; if (p>=70) return 'B'; if (p>=55) return 'C'; if (p>=40) return 'D'; return 'E'; }
+
+// --- Leaderboard (localStorage)
+const LB_KEY = 'pl_tester_lb_v1';
+function loadLB(){ try{ return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); }catch{ return []; } }
+function saveLB(data){ localStorage.setItem(LB_KEY, JSON.stringify(data)); }
+function renderLB(){ const data = loadLB(); lbBody.innerHTML = ''; if (!data.length){ lbBody.innerHTML = '<tr><td colspan="4" class="muted small">No scores yet</td></tr>'; return; } data.slice(0,50).forEach(r=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td>${r.lang}</td><td>${r.score}%</td><td class="small muted">${new Date(r.ts).toLocaleString()}</td>`; lbBody.appendChild(tr); }); }
+
+saveScoreBtn.addEventListener('click', ()=>{
+  if (!state.submitted || state.score===null){ alert('Submit the test before saving a score.'); return; }
+  const name = playerName.value.trim(); if (!name){ alert('Enter your name.'); return; }
+  const lb = loadLB(); lb.push({ name, lang: state.selectedLang, score: state.score, ts: Date.now() });
+  lb.sort((a,b)=> b.score - a.score || a.ts - b.ts);
+  saveLB(lb.slice(0,50)); renderLB();
+});
+clearLb.addEventListener('click', ()=>{ if (confirm('Clear leaderboard?')){ saveLB([]); renderLB(); } });
+
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// --- bootstrap (auto-select first language)
+(function init(){
+  const firstBtn = document.querySelector('.lang-btn');
+  if (firstBtn){ firstBtn.click(); }
+  renderLB();
+})();
+</script>
+</body>
+</html>
